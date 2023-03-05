@@ -14,9 +14,13 @@
 
 #include <limits>
 #include <list>
+#include <map>
 #include <mutex>  // NOLINT
 #include <unordered_map>
 #include <vector>
+#include <exception>
+#include <chrono>
+#include <memory>
 
 #include "common/config.h"
 #include "common/macros.h"
@@ -131,14 +135,53 @@ class LRUKReplacer {
    * @return size_t
    */
   auto Size() -> size_t;
+  /*
+  Backward k-distance is computed as the difference in time between current timestamp and the timestamp of kth previous
+  access. A frame with less than k historical accesses is given +inf as its backward k-distance. When multipe frames
+  have +inf backward k-distance, the replacer evicts the frame with the earliest timestamp.
+  */
 
  private:
   // TODO(student): implement me! You can replace these member variables as you like.
   // Remove maybe_unused if you start using them.
+  class frame;
+  struct MyCompare {
+    bool operator()(const frame& f1, const frame& f2) const {
+      if (f1.n_access < f1.k && f2.n_access < f2.k) {
+        return f1.access_rec[0] < f2.access_rec[0];
+      } else if (f1.n_access < f1.k) {
+        return true;
+      } else if (f2.n_access < f2.k) {
+        return false;
+      } else {
+        return f1.access_rec[f1.earliest] < f2.access_rec[f1.earliest];
+      }
+    }
+  };
+  class frame {
+    public:
+      frame(size_t lruk) : id(0), evictable(true), k(lruk), n_access(0), cur(0), earliest(0), k_distance(INT32_MAX + 1) {
+        if (lruk <= 0)
+          throw std::exception();
+        access_rec.reserve(lruk);
+      }
+      frame_id_t id;
+      bool evictable;
+      int k;
+      int n_access;
+      std::vector<size_t> access_rec;
+      int cur;
+      int earliest;
+      long k_distance;
+  };
+  std::list<frame> lru;
+  std::unordered_map<frame_id_t, std::list<frame>::iterator> id2it;
+  // std::list<frame_id_t> unevictable_frames;
+  std::multimap<size_t, frame_id_t, MyCompare> tree;
   [[maybe_unused]] size_t current_timestamp_{0};
-  [[maybe_unused]] size_t curr_size_{0};
-  [[maybe_unused]] size_t replacer_size_;
-  [[maybe_unused]] size_t k_;
+  size_t curr_size_{0};
+  size_t replacer_size_;
+  size_t k_;
   std::mutex latch_;
 };
 
