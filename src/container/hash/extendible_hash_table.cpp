@@ -15,6 +15,7 @@
 #include <functional>
 #include <list>
 #include <utility>
+#include <unordered_map>
 
 #include "container/hash/extendible_hash_table.h"
 #include "storage/page/page.h"
@@ -23,7 +24,9 @@ namespace bustub {
 
 template <typename K, typename V>
 ExtendibleHashTable<K, V>::ExtendibleHashTable(size_t bucket_size)
-    : global_depth_(0), bucket_size_(bucket_size), num_buckets_(1) {}
+    : global_depth_(0), bucket_size_(bucket_size), num_buckets_(1) {
+      m.rehash(bucket_size);
+    }
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::IndexOf(const K &key) -> size_t {
@@ -66,17 +69,28 @@ auto ExtendibleHashTable<K, V>::GetNumBucketsInternal() const -> int {
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Find(const K &key, V &value) -> bool {
-  UNREACHABLE("not implemented");
+  std::scoped_lock<std::mutex> lock(latch_);
+  if (m.find(key) ==  m.end())
+    return false;
+  value = m[key];
+  return true;
+  // UNREACHABLE("not implemented");
 }
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Remove(const K &key) -> bool {
-  UNREACHABLE("not implemented");
+  std::scoped_lock<std::mutex> lock(latch_);
+  if (m.find(key) == m.end())
+    return false;
+  m.erase(key);
+  // UNREACHABLE("not implemented");
 }
 
 template <typename K, typename V>
 void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
-  UNREACHABLE("not implemented");
+  std::scoped_lock<std::mutex> lock(latch_);
+  m[key] = value;
+  // UNREACHABLE("not implemented");
 }
 
 //===--------------------------------------------------------------------===//

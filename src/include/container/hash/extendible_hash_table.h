@@ -168,6 +168,8 @@ class ExtendibleHashTable : public HashTable<K, V> {
   // TODO(student): You may add additional private members and helper functions and remove the ones
   // you don't need.
 
+  std::unordered_map<K, V> m;
+
   int global_depth_;    // The global depth of the directory
   size_t bucket_size_;  // The size of a bucket
   int num_buckets_;     // The number of buckets in the hash table
