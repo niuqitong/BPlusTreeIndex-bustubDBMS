@@ -38,7 +38,8 @@ class BufferPoolManagerInstance : public BufferPoolManager {
    * @param replacer_k the lookback constant k for the LRU-K replacer
    * @param log_manager the log manager (for testing only: nullptr = disable logging). Please ignore this for P1.
    */
-  BufferPoolManagerInstance(size_t pool_size, DiskManager *disk_manager, size_t replacer_k = LRUK_REPLACER_K,
+  BufferPoolManagerInstance(
+    size_t pool_size, DiskManager *disk_manager, size_t replacer_k = LRUK_REPLACER_K,
                             LogManager *log_manager = nullptr);
 
   /**
@@ -56,16 +57,22 @@ class BufferPoolManagerInstance : public BufferPoolManager {
   /**
    * TODO(P1): Add implementation
    *
-   * @brief Create a new page in the buffer pool. Set page_id to the new page's id, or nullptr if all frames
+   * @brief Create a new page in the buffer pool. Set page_id to the new page's id, 
+   * or nullptr if all frames
    * are currently in use and not evictable (in another word, pinned).
    *
-   * You should pick the replacement frame from either the free list or the replacer (always find from the free list
-   * first), and then call the AllocatePage() method to get a new page id. If the replacement frame has a dirty page,
-   * you should write it back to the disk first. You also need to reset the memory and metadata for the new page.
+   * You should pick the replacement frame from either the free list or the replacer 
+   * (always find from the free list
+   * first), and then call the AllocatePage() method to get a new page id. If the 
+   * replacement frame has a dirty page,
+   * you should write it back to the disk first. You also need to reset the memory 
+   * and metadata for the new page.
    *
    * Remember to "Pin" the frame by calling replacer.SetEvictable(frame_id, false)
-   * so that the replacer wouldn't evict the frame before the buffer pool manager "Unpin"s it.
-   * Also, remember to record the access history of the frame in the replacer for the lru-k algorithm to work.
+   * so that the replacer wouldn't evict the frame before the buffer pool manager 
+   * "Unpin"s it.
+   * Also, remember to record the access history of the frame in the replacer for 
+   * the lru-k algorithm to work.
    *
    * @param[out] page_id id of created page
    * @return nullptr if no new pages could be created, otherwise pointer to new page

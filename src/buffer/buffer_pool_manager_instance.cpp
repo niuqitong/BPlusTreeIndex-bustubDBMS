@@ -17,8 +17,8 @@
 
 namespace bustub {
 
-BufferPoolManagerInstance::BufferPoolManagerInstance(size_t pool_size, DiskManager *disk_manager, size_t replacer_k,
-                                                     LogManager *log_manager)
+BufferPoolManagerInstance::BufferPoolManagerInstance(
+  size_t pool_size, DiskManager *disk_manager, size_t replacer_k, LogManager *log_manager)
     : pool_size_(pool_size), disk_manager_(disk_manager), log_manager_(log_manager) {
   // we allocate a consecutive memory space for the buffer pool
   pages_ = new Page[pool_size_];
@@ -28,12 +28,13 @@ BufferPoolManagerInstance::BufferPoolManagerInstance(size_t pool_size, DiskManag
   // Initially, every page is in the free list.
   for (size_t i = 0; i < pool_size_; ++i) {
     free_list_.emplace_back(static_cast<int>(i));
+    // 编译时可以确定的类型转换才能使用
   }
 
   // TODO(students): remove this line after you have implemented the buffer pool manager
-  throw NotImplementedException(
-      "BufferPoolManager is not implemented yet. If you have finished implementing BPM, please remove the throw "
-      "exception line in `buffer_pool_manager_instance.cpp`.");
+  // throw NotImplementedException(
+  //     "BufferPoolManager is not implemented yet. If you have finished implementing BPM, please remove the throw "
+  //     "exception line in `buffer_pool_manager_instance.cpp`.");
 }
 
 BufferPoolManagerInstance::~BufferPoolManagerInstance() {
@@ -42,7 +43,41 @@ BufferPoolManagerInstance::~BufferPoolManagerInstance() {
   delete replacer_;
 }
 
-auto BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) -> Page * { return nullptr; }
+auto BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) -> Page * { 
+  std::scoped_lock<std::mutex> lock(latch_);
+  if (!free_list_.empty()) {
+    auto& frame_id = *free_list_.begin();
+    free_list_.pop_front();
+    replacer_->SetEvictable(frame_id, false);
+    replacer_->RecordAccess(frame_id);
+    *page_id = AllocatePage();
+    page_table_->Insert(*page_id, frame_id);
+    auto& p = pages_[frame_id];
+    p.page_id_ = *page_id;
+    p.pin_count_ = 1;
+    p.is_dirty_ = false;
+    p.ResetMemory();
+    return &pages_[frame_id];
+  } else {
+    frame_id_t evited_frame_id;
+    if (replacer_->Evict(&evited_frame_id) == false) {
+      return nullptr;
+    } else {
+      replacer_->SetEvictable(evited_frame_id, false);
+      replacer_->RecordAccess(evited_frame_id);
+      Page& p = pages_[evited_frame_id];
+      *page_id = AllocatePage();
+      if (p.IsDirty()) {
+        disk_manager_->WritePage(p.GetPageId(), p.GetData());
+      }
+      p.page_id_ = *page_id;
+      p.pin_count_ = 1;
+      p.is_dirty_ = false;
+      p.ResetMemory();
+      return &pages_[evited_frame_id];
+    }
+  }
+}
 
 auto BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) -> Page * { return nullptr; }
 

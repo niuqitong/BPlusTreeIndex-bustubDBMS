@@ -104,7 +104,7 @@ void LRUKReplacer::Remove(frame_id_t frame_id) {
     lru.erase(it);
     id2it.erase(frame_id);
     auto tree_it = tree.lower_bound(frm.access_rec[frm.earliest]);
-    while (tree_it->second != frame_id)
+    while (tree_it->id != frame_id)
         ++tree_it;
     tree.erase(tree_it);
 }
