@@ -14,7 +14,7 @@
 
 #include <limits>
 #include <list>
-#include <map>
+#include <set>
 #include <mutex>  // NOLINT
 #include <unordered_map>
 #include <vector>
@@ -165,6 +165,8 @@ class LRUKReplacer {
           throw std::exception();
         access_rec.reserve(lruk);
       }
+      frame(frame&& f) : access_rec(std::move(f.access_rec)), id(f.id), evictable(f.evictable),
+        k(f.k), n_access(f.n_access), cur(f.cur), earliest(f.earliest), k_distance(f.k_distance) {}
       frame_id_t id;
       bool evictable;
       int k;
@@ -177,7 +179,7 @@ class LRUKReplacer {
   std::list<frame> lru;
   std::unordered_map<frame_id_t, std::list<frame>::iterator> id2it;
   // std::list<frame_id_t> unevictable_frames;
-  std::multimap<size_t, frame_id_t, MyCompare> tree;
+  std::multiset<frame, MyCompare> tree;
   [[maybe_unused]] size_t current_timestamp_{0};
   size_t curr_size_{0};
   size_t replacer_size_;

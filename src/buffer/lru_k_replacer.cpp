@@ -22,8 +22,8 @@ auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
     if (curr_size_ > 0) {
         auto it = tree.begin();
         while (it != tree.end()) {
-            auto id = it->second;
-            auto& frame = *id2it[id];
+            auto& frame = *it;
+            auto id = frame.id;
             if (frame.evictable == false) {
                 ++it;
                 continue;
@@ -52,10 +52,10 @@ void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
         frm.access_rec[0] = duration;
         ++frm.cur;
         ++frm.n_access;
-        lru.push_back(frm);
+        tree.emplace(frm, frame_id);
+        lru.push_back(std::move(frm));
         auto it = lru.end();
         id2it[frame_id] = --it;
-        tree.emplace(duration, frame_id);
         // ++curr_size_;
     } else {
         auto& frame = *id2it[frame_id];
@@ -63,15 +63,15 @@ void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
             frame.access_rec[frame.cur++] = duration;
             ++frame.n_access;
         } else {
-            auto it = tree.lower_bound(frame.access_rec[frame.earliest]);
-            while (it->second != frame_id)
+            auto it = tree.lower_bound(frame);
+            while ((*it).id != frame.id)
                 ++it;
             tree.erase(it);
             frame.cur = (frame.cur) % frame.k;
             frame.access_rec[frame.cur] = duration;
             frame.earliest = (frame.cur + 1) % frame.k;
-            tree.emplace(frame.access_rec[frame.earliest], frame_id);
             ++frame.cur;
+            tree.insert(frame);
         }
     }
 
