@@ -40,7 +40,7 @@ auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
  }
 
 void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
-    if (frame_id > replacer_size_)
+    if (static_cast<size_t>(frame_id) > replacer_size_)
         throw std::exception();
     std::scoped_lock<std::mutex> lock(latch_);
     auto now = std::chrono::system_clock::now();
@@ -59,7 +59,7 @@ void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
         // ++curr_size_;
     } else {
         auto& frame = *id2it[frame_id];
-        if (frame.access_rec.size() < frame.k) {
+        if (frame.access_rec.size() < static_cast<size_t>(frame.k)) {
             frame.access_rec[frame.cur++] = duration;
             ++frame.n_access;
         } else {
@@ -78,21 +78,23 @@ void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
 }
 
 void LRUKReplacer::SetEvictable(frame_id_t frame_id, bool set_evictable) {
-    if (frame_id > replacer_size_)
+    if (static_cast<size_t>(frame_id) > replacer_size_)
         throw std::exception();
     std::scoped_lock<std::mutex> lock(latch_);
     if (id2it.find(frame_id) == id2it.end())
         throw std::exception();
     auto& frame = *id2it[frame_id];
-    if (frame.evictable ^ set_evictable)
+    if (frame.evictable ^ set_evictable) {
         if (set_evictable)
             ++curr_size_;
-        else --curr_size_;
+        else --(curr_size_);
+    }
+        
     frame.evictable = set_evictable;
 }
 
 void LRUKReplacer::Remove(frame_id_t frame_id) {
-    if (frame_id > replacer_size_)
+    if (static_cast<size_t>(frame_id) > replacer_size_)
         throw std::exception();
     std::scoped_lock<std::mutex> lock(latch_);
     if (id2it.find(frame_id) == id2it.end())

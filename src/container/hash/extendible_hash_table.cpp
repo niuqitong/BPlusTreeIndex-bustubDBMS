@@ -83,6 +83,7 @@ auto ExtendibleHashTable<K, V>::Remove(const K &key) -> bool {
   if (m.find(key) == m.end())
     return false;
   m.erase(key);
+  return true;
   // UNREACHABLE("not implemented");
 }
 
@@ -101,17 +102,20 @@ ExtendibleHashTable<K, V>::Bucket::Bucket(size_t array_size, int depth) : size_(
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Bucket::Find(const K &key, V &value) -> bool {
-  UNREACHABLE("not implemented");
+  // UNREACHABLE("not implemented");
+  return true;
 }
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Bucket::Remove(const K &key) -> bool {
-  UNREACHABLE("not implemented");
+  // UNREACHABLE("not implemented");
+  return true;
 }
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Bucket::Insert(const K &key, const V &value) -> bool {
-  UNREACHABLE("not implemented");
+  // UNREACHABLE("not implemented");
+  return true;
 }
 
 template class ExtendibleHashTable<page_id_t, Page *>;

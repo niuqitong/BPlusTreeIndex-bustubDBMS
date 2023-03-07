@@ -162,13 +162,14 @@ class LRUKReplacer {
   };
   class frame {
     public:
-      frame(size_t lruk) : id(0), pgid(INVALID_PAGE_ID), evictable(false), k(lruk), n_access(0), cur(0), earliest(0), k_distance(INT32_MAX + 1) {
+      frame(size_t lruk) : id(0), pgid(INVALID_PAGE_ID), evictable(false), k(lruk), n_access(0), cur(0), earliest(0), k_distance(INT32_MAX) {
         if (lruk <= 0)
           throw std::exception();
         access_rec.reserve(lruk);
       }
-      frame(frame&& f) : access_rec(std::move(f.access_rec)), id(f.id), pgid(f.pgid), evictable(f.evictable),
-        k(f.k), n_access(f.n_access), cur(f.cur), earliest(f.earliest), k_distance(f.k_distance) {}
+      frame(frame&& f) : id(f.id), pgid(f.pgid), evictable(f.evictable), k(f.k), 
+                          n_access(f.n_access), access_rec(std::move(f.access_rec)), cur(f.cur), 
+                          earliest(f.earliest), k_distance(f.k_distance) {}
       frame_id_t id;
       page_id_t pgid;
       bool evictable;

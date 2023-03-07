@@ -120,7 +120,7 @@ auto BufferPoolManagerInstance::UnpinPgImp(page_id_t page_id, bool is_dirty) -> 
     replacer_->SetEvictable(fid, true);
   }
   pages_[fid].is_dirty_ = is_dirty;
-
+  return true;
  }
 
 auto BufferPoolManagerInstance::FlushPgImp(page_id_t page_id) -> bool { 
@@ -130,6 +130,7 @@ auto BufferPoolManagerInstance::FlushPgImp(page_id_t page_id) -> bool {
     return false;
   disk_manager_->WritePage(page_id, pages_[fid].data_);
   pages_[fid].is_dirty_ = false;
+  return true;
 }
 
 void BufferPoolManagerInstance::FlushAllPgsImp() {
@@ -150,7 +151,7 @@ void BufferPoolManagerInstance::FlushAllPgsImp() {
 auto BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) -> bool {
   std::scoped_lock<std::mutex> lock(latch_);
   frame_id_t fid;
-  if (page_table_.find(page_id, fid) == false)
+  if (page_table_->Find(page_id, fid) == false)
     return true;
   if (pages_[fid].GetPinCount() > 0)
     return false;
