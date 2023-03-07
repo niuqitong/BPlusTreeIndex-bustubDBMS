@@ -39,6 +39,8 @@ namespace bustub {
  * classical LRU algorithm is used to choose victim.
  */
 class LRUKReplacer {
+  friend class BufferPoolManagerInstance;
+
  public:
   /**
    *
@@ -160,7 +162,7 @@ class LRUKReplacer {
   };
   class frame {
     public:
-      frame(size_t lruk) : id(0), pgid(INVALID_PAGE_ID), evictable(true), k(lruk), n_access(0), cur(0), earliest(0), k_distance(INT32_MAX + 1) {
+      frame(size_t lruk) : id(0), pgid(INVALID_PAGE_ID), evictable(false), k(lruk), n_access(0), cur(0), earliest(0), k_distance(INT32_MAX + 1) {
         if (lruk <= 0)
           throw std::exception();
         access_rec.reserve(lruk);

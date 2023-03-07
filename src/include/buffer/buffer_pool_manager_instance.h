@@ -54,6 +54,7 @@ class BufferPoolManagerInstance : public BufferPoolManager {
   auto GetPages() -> Page * { return pages_; }
 
  protected:
+  void page_reset(frame_id_t fid, page_id_t pgid);
   /**
    * TODO(P1): Add implementation
    *

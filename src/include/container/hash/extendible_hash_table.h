@@ -76,7 +76,14 @@ class ExtendibleHashTable : public HashTable<K, V> {
    * @return True if the key is found, false otherwise.
    */
   auto Find(const K &key, V &value) -> bool override;
-
+  auto get_begin_it() {
+    if (!m.empty())
+      return m.begin();
+    else return m.end();
+  }
+  auto get_end_it() {
+    return m.end();
+  }
   /**
    *
    * TODO(P1): Add implementation
