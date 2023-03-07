@@ -22,6 +22,7 @@
 #include <mutex>  // NOLINT
 #include <utility>
 #include <vector>
+#include <unordered_map>
 
 #include "container/hash/hash_table.h"
 

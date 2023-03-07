@@ -22,8 +22,8 @@
 #include <chrono>
 #include <memory>
 
-#include "common/config.h"
-#include "common/macros.h"
+#include "../common/config.h"
+#include "../common/macros.h"
 
 namespace bustub {
 
@@ -167,6 +167,9 @@ class LRUKReplacer {
           throw std::exception();
         access_rec.reserve(lruk);
       }
+      frame(const frame& f) : id(f.id), pgid(f.pgid), evictable(f.evictable), k(f.k), 
+                          n_access(f.n_access), access_rec(f.access_rec), cur(f.cur), 
+                          earliest(f.earliest), k_distance(f.k_distance) {}
       frame(frame&& f) : id(f.id), pgid(f.pgid), evictable(f.evictable), k(f.k), 
                           n_access(f.n_access), access_rec(std::move(f.access_rec)), cur(f.cur), 
                           earliest(f.earliest), k_distance(f.k_distance) {}

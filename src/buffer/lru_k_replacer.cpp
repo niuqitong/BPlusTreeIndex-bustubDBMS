@@ -52,7 +52,7 @@ void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
         frm.access_rec[0] = duration;
         ++frm.cur;
         ++frm.n_access;
-        tree.emplace(frm, frame_id);
+        tree.emplace(frm);
         lru.push_back(std::move(frm));
         auto it = lru.end();
         id2it[frame_id] = --it;
