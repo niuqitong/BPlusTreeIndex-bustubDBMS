@@ -82,33 +82,43 @@ class BufferPoolManagerInstance : public BufferPoolManager {
   /**
    * TODO(P1): Add implementation
    *
-   * @brief Fetch the requested page from the buffer pool. Return nullptr if page_id needs to be fetched from the disk
-   * but all frames are currently in use and not evictable (in another word, pinned).
+   * @brief Fetch the requested page from the buffer pool. Return nullptr 
+   * if page_id needs to be fetched from the disk
+   * but all frames are currently in use and not evictable (in another word, 
+   * pinned).
    *
-   * First search for page_id in the buffer pool. If not found, pick a replacement frame from either the free list or
-   * the replacer (always find from the free list first), read the page from disk by calling disk_manager_->ReadPage(),
-   * and replace the old page in the frame. Similar to NewPgImp(), if the old page is dirty, you need to write it back
+   * First search for page_id in the buffer pool. If not found, pick a 
+   * replacement frame from either the free list or
+   * the replacer (always find from the free list first), read the page 
+   * from disk by calling disk_manager_->ReadPage(),
+   * and replace the old page in the frame. Similar to NewPgImp(), if 
+   * the old page is dirty, you need to write it back
    * to disk and update the metadata of the new page
    *
-   * In addition, remember to disable eviction and record the access history of the frame like you did for NewPgImp().
+   * In addition, remember to disable eviction and record the access 
+   * history of the frame like you did for NewPgImp().
    *
    * @param page_id id of page to be fetched
-   * @return nullptr if page_id cannot be fetched, otherwise pointer to the requested page
+   * @return nullptr if page_id cannot be fetched, otherwise pointer 
+   * to the requested page
    */
   auto FetchPgImp(page_id_t page_id) -> Page * override;
 
   /**
    * TODO(P1): Add implementation
    *
-   * @brief Unpin the target page from the buffer pool. If page_id is not in the buffer pool or its pin count is already
+   * @brief Unpin the target page from the buffer pool. If page_id is not in the 
+   * buffer pool or its pin count is already
    * 0, return false.
    *
-   * Decrement the pin count of a page. If the pin count reaches 0, the frame should be evictable by the replacer.
+   * Decrement the pin count of a page. If the pin count reaches 0, the frame 
+   * should be evictable by the replacer.
    * Also, set the dirty flag on the page to indicate if the page was modified.
    *
    * @param page_id id of page to be unpinned
    * @param is_dirty true if the page should be marked as dirty, false otherwise
-   * @return false if the page is not in the page table or its pin count is <= 0 before this call, true otherwise
+   * @return false if the page is not in the page table or its pin count is <= 0 
+   * before this call, true otherwise
    */
   auto UnpinPgImp(page_id_t page_id, bool is_dirty) -> bool override;
 

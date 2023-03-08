@@ -174,7 +174,7 @@ class LRUKReplacer {
           k_distance(INT32_MAX) {
       if (lruk <= 0) throw std::exception();
       access_rec.reserve(lruk);
-      access_rec.resize(lruk, 0);
+      access_rec.resize(1, 0);
     }
     frame(const frame &f)
         : id(f.id),
