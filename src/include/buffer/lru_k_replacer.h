@@ -12,15 +12,16 @@
 
 #pragma once
 
+#include <chrono>
+#include <exception>
 #include <limits>
 #include <list>
-#include <set>
-#include <mutex>  // NOLINT
-#include <unordered_map>
-#include <vector>
-#include <exception>
-#include <chrono>
 #include <memory>
+#include <mutex>  // NOLINT
+#include <set>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "../common/config.h"
 #include "../common/macros.h"
@@ -148,7 +149,7 @@ class LRUKReplacer {
   // Remove maybe_unused if you start using them.
   class frame;
   struct MyCompare {
-    bool operator()(const frame& f1, const frame& f2) const {
+    bool operator()(const frame &f1, const frame &f2) const {
       if (f1.n_access < f1.k && f2.n_access < f2.k) {
         return f1.access_rec[0] < f2.access_rec[0];
       } else if (f1.n_access < f1.k) {
@@ -161,27 +162,49 @@ class LRUKReplacer {
     }
   };
   class frame {
-    public:
-      frame(size_t lruk) : id(0), pgid(INVALID_PAGE_ID), evictable(false), k(lruk), n_access(0), cur(0), earliest(0), k_distance(INT32_MAX) {
-        if (lruk <= 0)
-          throw std::exception();
-        access_rec.reserve(lruk);
-      }
-      frame(const frame& f) : id(f.id), pgid(f.pgid), evictable(f.evictable), k(f.k), 
-                          n_access(f.n_access), access_rec(f.access_rec), cur(f.cur), 
-                          earliest(f.earliest), k_distance(f.k_distance) {}
-      frame(frame&& f) : id(f.id), pgid(f.pgid), evictable(f.evictable), k(f.k), 
-                          n_access(f.n_access), access_rec(std::move(f.access_rec)), cur(f.cur), 
-                          earliest(f.earliest), k_distance(f.k_distance) {}
-      frame_id_t id;
-      page_id_t pgid;
-      bool evictable;
-      int k;
-      int n_access;
-      std::vector<size_t> access_rec;
-      int cur;
-      int earliest;
-      long k_distance;
+   public:
+    explicit frame(size_t lruk)
+        : id(0),
+          pgid(INVALID_PAGE_ID),
+          evictable(false),
+          k(lruk),
+          n_access(0),
+          cur(0),
+          earliest(0),
+          k_distance(INT32_MAX) {
+      if (lruk <= 0) throw std::exception();
+      access_rec.reserve(lruk);
+      access_rec.resize(lruk, 0);
+    }
+    frame(const frame &f)
+        : id(f.id),
+          pgid(f.pgid),
+          evictable(f.evictable),
+          k(f.k),
+          n_access(f.n_access),
+          access_rec(f.access_rec),
+          cur(f.cur),
+          earliest(f.earliest),
+          k_distance(f.k_distance) {}
+    frame(frame &&f)
+        : id(f.id),
+          pgid(f.pgid),
+          evictable(f.evictable),
+          k(f.k),
+          n_access(f.n_access),
+          access_rec(std::move(f.access_rec)),
+          cur(f.cur),
+          earliest(f.earliest),
+          k_distance(f.k_distance) {}
+    frame_id_t id;
+    page_id_t pgid;
+    bool evictable;
+    int k;
+    int n_access;
+    std::vector<size_t> access_rec;
+    int cur;
+    int earliest;
+    int64_t k_distance;
   };
   std::list<frame> lru;
   std::unordered_map<frame_id_t, std::list<frame>::iterator> id2it;

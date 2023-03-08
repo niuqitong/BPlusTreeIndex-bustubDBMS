@@ -20,9 +20,9 @@
 #include <list>
 #include <memory>
 #include <mutex>  // NOLINT
+#include <unordered_map>
 #include <utility>
 #include <vector>
-#include <unordered_map>
 
 #include "container/hash/hash_table.h"
 
@@ -80,11 +80,10 @@ class ExtendibleHashTable : public HashTable<K, V> {
   auto get_begin_it() {
     if (!m.empty())
       return m.begin();
-    else return m.end();
+    else
+      return m.end();
   }
-  auto get_end_it() {
-    return m.end();
-  }
+  auto get_end_it() { return m.end(); }
   /**
    *
    * TODO(P1): Add implementation
