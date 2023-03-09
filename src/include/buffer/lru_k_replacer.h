@@ -157,7 +157,7 @@ class LRUKReplacer {
       } else if (f2.n_access < f2.k) {
         return false;
       } else {
-        return f1.access_rec[f1.earliest] < f2.access_rec[f1.earliest];
+        return f1.access_rec[f1.earliest] < f2.access_rec[f2.earliest];
       }
     }
   };
@@ -186,16 +186,16 @@ class LRUKReplacer {
           cur(f.cur),
           earliest(f.earliest),
           k_distance(f.k_distance) {}
-    frame(frame &&f)
-        : id(f.id),
-          pgid(f.pgid),
-          evictable(f.evictable),
-          k(f.k),
-          n_access(f.n_access),
-          access_rec(std::move(f.access_rec)),
-          cur(f.cur),
-          earliest(f.earliest),
-          k_distance(f.k_distance) {}
+    // frame(frame &&f)
+    //     : id(f.id),
+    //       pgid(f.pgid),
+    //       evictable(f.evictable),
+    //       k(f.k),
+    //       n_access(f.n_access),
+    //       access_rec(std::move(f.access_rec)),
+    //       cur(f.cur),
+    //       earliest(f.earliest),
+    //       k_distance(f.k_distance) {}
     frame_id_t id;
     page_id_t pgid;
     bool evictable;
