@@ -17,6 +17,7 @@ namespace bustub {
 LRUKReplacer::LRUKReplacer(size_t num_frames, size_t k) : replacer_size_(num_frames), k_(k) {}
 
 auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
+  std::scoped_lock<std::mutex> lock(latch_);
   if (!fifo_.empty()) {
     for (auto it = fifo_.begin(); it != fifo_.end(); ++it) {
       if (id2frame_[*it].evitable_) {
