@@ -42,7 +42,7 @@ BufferPoolManagerInstance::~BufferPoolManagerInstance() {
   delete replacer_;
 }
 
-auto BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) -> Page * { 
+auto BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) -> Page * {
   std::scoped_lock lock(latch_);
   frame_id_t fid;
   if (!GetAvailableFrame(&fid)) {
@@ -55,12 +55,12 @@ auto BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) -> Page * {
   page_table_->Insert(pages_[fid].page_id_, fid);
   replacer_->RecordAccess(fid);
   replacer_->SetEvictable(fid, false);
- 
+
   *page_id = pages_[fid].page_id_;
   return &pages_[fid];
- }
+}
 
-auto BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) -> Page * { 
+auto BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) -> Page * {
   std::scoped_lock lock(latch_);
   frame_id_t fid;
   // requested page already in buffer pool
@@ -81,9 +81,9 @@ auto BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) -> Page * {
   replacer_->RecordAccess(fid);
   replacer_->SetEvictable(fid, false);
   return &pages_[fid];
- }
+}
 
-auto BufferPoolManagerInstance::UnpinPgImp(page_id_t page_id, bool is_dirty) -> bool { 
+auto BufferPoolManagerInstance::UnpinPgImp(page_id_t page_id, bool is_dirty) -> bool {
   std::scoped_lock lock(latch_);
   frame_id_t fid;
   if (!page_table_->Find(page_id, fid) || pages_[fid].pin_count_ <= 0) {
@@ -98,9 +98,9 @@ auto BufferPoolManagerInstance::UnpinPgImp(page_id_t page_id, bool is_dirty) -> 
     pages_[fid].is_dirty_ = is_dirty;
   }
   return true;
- }
+}
 
-auto BufferPoolManagerInstance::FlushPgImp(page_id_t page_id) -> bool { 
+auto BufferPoolManagerInstance::FlushPgImp(page_id_t page_id) -> bool {
   std::scoped_lock lock(latch_);
   frame_id_t fid;
   if (!page_table_->Find(page_id, fid)) {
@@ -109,7 +109,7 @@ auto BufferPoolManagerInstance::FlushPgImp(page_id_t page_id) -> bool {
   disk_manager_->WritePage(pages_[fid].page_id_, pages_[fid].data_);
   pages_[fid].is_dirty_ = false;
   return true;
- }
+}
 
 void BufferPoolManagerInstance::FlushAllPgsImp() {
   std::scoped_lock lock(latch_);
@@ -122,7 +122,7 @@ void BufferPoolManagerInstance::FlushAllPgsImp() {
   }
 }
 
-auto BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) -> bool { 
+auto BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) -> bool {
   std::scoped_lock lock(latch_);
   frame_id_t fid;
   if (!page_table_->Find(page_id, fid)) {
@@ -143,7 +143,7 @@ auto BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) -> bool {
   free_list_.emplace_back(fid);
   DeallocatePage(page_id);
   return true;
- }
+}
 
 auto BufferPoolManagerInstance::AllocatePage() -> page_id_t { return next_page_id_++; }
 

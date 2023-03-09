@@ -70,18 +70,14 @@ template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Find(const K &key, V &value) -> bool {
   std::scoped_lock<std::mutex> lock(latch_);
   auto idx = IndexOf(key);
-  if (dir_[idx]->Find(key, value)) {
-    return true;
-  }
-  return false;
+  return dir_[idx]->Find(key, value);
 }
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Remove(const K &key) -> bool {
   std::scoped_lock<std::mutex> lock(latch_);
   auto idx = IndexOf(key);
-  if (dir_[idx]->Remove(key)) return true;
-  return false;
+  return dir_[idx]->Remove(key);
 }
 
 template <typename K, typename V>

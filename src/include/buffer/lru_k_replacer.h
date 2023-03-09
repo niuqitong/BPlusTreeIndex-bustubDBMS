@@ -133,11 +133,11 @@ class LRUKReplacer {
   auto Size() -> size_t;
 
  private:
-  class frame {
+  class Frame {
    public:
-    size_t n_access{0};
-    bool evitable{true};
-    std::list<frame_id_t>::iterator p;
+    size_t n_access_{0};
+    bool evitable_{true};
+    std::list<frame_id_t>::iterator p_;
   };
   // TODO(student): implement me! You can replace these member variables as you like.
   // Remove maybe_unused if you start using them.
@@ -147,9 +147,9 @@ class LRUKReplacer {
   size_t k_;
   std::mutex latch_;
 
-  std::list<frame_id_t> fifo;
-  std::list<frame_id_t> lru;
-  std::unordered_map<frame_id_t, frame> id2frame;
+  std::list<frame_id_t> fifo_;
+  std::list<frame_id_t> lru_;
+  std::unordered_map<frame_id_t, Frame> id2frame_;
 };
 
 }  // namespace bustub

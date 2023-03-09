@@ -2,9 +2,9 @@
 //
 //                         BusTub
 //
-// lru_k_replacer.cpp
+// lru__k_replacer.cpp
 //
-// Identification: src/buffer/lru_k_replacer.cpp
+// Identification: src/buffer/lru__k_replacer.cpp
 //
 // Copyright (c) 2015-2022, Carnegie Mellon University Database Group
 //
@@ -17,24 +17,24 @@ namespace bustub {
 LRUKReplacer::LRUKReplacer(size_t num_frames, size_t k) : replacer_size_(num_frames), k_(k) {}
 
 auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
-  if (!fifo.empty()) {
-    for (auto it = fifo.begin(); it != fifo.end(); ++it) {
-      if (id2frame[*it].evitable) {
+  if (!fifo_.empty()) {
+    for (auto it = fifo_.begin(); it != fifo_.end(); ++it) {
+      if (id2frame_[*it].evitable_) {
         *frame_id = *it;
-        id2frame.erase(*it);
+        id2frame_.erase(*it);
         --curr_size_;
-        fifo.erase(it);
+        fifo_.erase(it);
         return true;
       }
     }
   }
-  if (!lru.empty()) {
-    for (auto it = lru.begin(); it != lru.end(); ++it) {
-      if (id2frame[*it].evitable) {
+  if (!lru_.empty()) {
+    for (auto it = lru_.begin(); it != lru_.end(); ++it) {
+      if (id2frame_[*it].evitable_) {
         *frame_id = *it;
-        id2frame.erase(*it);
+        id2frame_.erase(*it);
         --curr_size_;
-        lru.erase(it);
+        lru_.erase(it);
         return true;
       }
     }
@@ -44,56 +44,64 @@ auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
 
 void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
   std::scoped_lock<std::mutex> lock(latch_);
-  if (frame_id > static_cast<int>(replacer_size_)) throw std::exception();
-  size_t cur_n_access = ++id2frame[frame_id].n_access;
+  if (frame_id > static_cast<int>(replacer_size_)) {
+    throw std::exception();
+  }
+  size_t cur_n_access = ++id2frame_[frame_id].n_access_;
   if (cur_n_access == 1) {
     ++curr_size_;
-    fifo.emplace_back(frame_id);
-    auto it = fifo.end();
-    id2frame[frame_id].p = --it;
+    fifo_.emplace_back(frame_id);
+    auto it = fifo_.end();
+    id2frame_[frame_id].p_ = --it;
   } else {
     if (cur_n_access == k_) {
-      fifo.erase(id2frame[frame_id].p);
-      lru.emplace_back(frame_id);
-      auto it = lru.end();
-      id2frame[frame_id].p = --it;
+      fifo_.erase(id2frame_[frame_id].p_);
+      lru_.emplace_back(frame_id);
+      auto it = lru_.end();
+      id2frame_[frame_id].p_ = --it;
     } else if (cur_n_access > k_) {
-      lru.erase(id2frame[frame_id].p);
-      lru.emplace_back(frame_id);
-      auto it = lru.end();
-      id2frame[frame_id].p = --it;
+      lru_.erase(id2frame_[frame_id].p_);
+      lru_.emplace_back(frame_id);
+      auto it = lru_.end();
+      id2frame_[frame_id].p_ = --it;
     }
   }
 }
 
 void LRUKReplacer::SetEvictable(frame_id_t frame_id, bool set_evictable) {
   std::scoped_lock<std::mutex> lock(latch_);
-  if (frame_id > static_cast<int>(replacer_size_)) throw std::exception();
-  if (id2frame.find(frame_id) == id2frame.end()) return;
-  if (set_evictable ^ id2frame[frame_id].evitable) {
+  if (frame_id > static_cast<int>(replacer_size_)) {
+    throw std::exception();
+  }
+  if (id2frame_.find(frame_id) == id2frame_.end()) {
+    return;
+  }
+  if (set_evictable ^ id2frame_[frame_id].evitable_) {
     if (set_evictable) {
       ++curr_size_;
     } else {
       --curr_size_;
     }
   }
-  id2frame[frame_id].evitable = set_evictable;
+  id2frame_[frame_id].evitable_ = set_evictable;
 }
 
-void LRUKReplacer::Remove(frame_id_t frame_id) { 
-  std::scoped_lock<std::mutex> lock(latch_); 
-  if (id2frame.find(frame_id) == id2frame.end())
+void LRUKReplacer::Remove(frame_id_t frame_id) {
+  std::scoped_lock<std::mutex> lock(latch_);
+  if (id2frame_.find(frame_id) == id2frame_.end()) {
     return;
-  if (!id2frame[frame_id].evitable)
+  }
+  if (!id2frame_[frame_id].evitable_) {
     throw std::exception();
-  if (id2frame[frame_id].n_access < k_) {
-    fifo.erase(id2frame[frame_id].p);
+  }
+  if (id2frame_[frame_id].n_access_ < k_) {
+    fifo_.erase(id2frame_[frame_id].p_);
   } else {
-    lru.erase(id2frame[frame_id].p);
+    lru_.erase(id2frame_[frame_id].p_);
   }
   --curr_size_;
-  id2frame.erase(frame_id);
-  }
+  id2frame_.erase(frame_id);
+}
 
 auto LRUKReplacer::Size() -> size_t {
   std::scoped_lock<std::mutex> lock(latch_);
