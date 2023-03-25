@@ -33,7 +33,7 @@ class RID {
   RID(page_id_t page_id, uint32_t slot_num) : page_id_(page_id), slot_num_(slot_num) {}
 
   explicit RID(int64_t rid) : page_id_(static_cast<page_id_t>(rid >> 32)), slot_num_(static_cast<uint32_t>(rid)) {}
-
+  // explicit 用于单参数的构造函数, 防止隐式转换
   inline auto Get() const -> int64_t { return (static_cast<int64_t>(page_id_)) << 32 | slot_num_; }
 
   inline auto GetPageId() const -> page_id_t { return page_id_; }

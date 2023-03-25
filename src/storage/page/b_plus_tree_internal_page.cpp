@@ -61,7 +61,7 @@ auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const -> ValueType {
   return p->second;
  }
 
-// valuetype for internalNode should be page id_t
+// valuetype for internalNode should be page_id_t
 template class BPlusTreeInternalPage<GenericKey<4>, page_id_t, GenericComparator<4>>;
 template class BPlusTreeInternalPage<GenericKey<8>, page_id_t, GenericComparator<8>>;
 template class BPlusTreeInternalPage<GenericKey<16>, page_id_t, GenericComparator<16>>;
