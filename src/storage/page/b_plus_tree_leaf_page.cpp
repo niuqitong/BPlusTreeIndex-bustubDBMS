@@ -80,7 +80,7 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType& key, const ValueType& val
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveSplitedData(B_PLUS_TREE_LEAF_PAGE_TYPE* target_leaf) {
   int old_size = GetSize();
-  int offset = (old_size + 1) / 2;
+  int offset = (old_size + 1) / 2; // left part length >= right part
   for (int i = offset; i < old_size; ++i) {
     target_leaf->SetKV(i - offset, array_[i].first, array_[i].second);
   }

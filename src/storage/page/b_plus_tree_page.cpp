@@ -31,7 +31,7 @@ void BPlusTreePage::SetPageType(IndexPageType page_type) {
  */
 auto BPlusTreePage::GetSize() const -> int { return size_; }
 void BPlusTreePage::SetSize(int size) { size_ = size; }
-void BPlusTreePage::IncreaseSize(int amount) { ++size_; }
+void BPlusTreePage::IncreaseSize(int amount = 1) { size_ += amount; }
 
 /*
  * Helper methods to get/set max size (capacity) of the page

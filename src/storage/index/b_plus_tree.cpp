@@ -91,7 +91,7 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
     leaf_page = reinterpret_cast<LeafPage*>(page->GetData());
     leaf_page->Init(root_page_id_, INVALID_PAGE_ID, leaf_max_size_);
     leaf_page->SetKV(0, key, value);
-    leaf_page->IncreaseSize();
+    leaf_page->IncreaseSize(1);
     leaf_page->SetNextPageId(INVALID_PAGE_ID);
     buffer_pool_manager_->UnpinPage(root_page_id_, false); // false means not dirty
     return true;
@@ -121,8 +121,61 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   leaf_page->SetNextPageId(new_leaf_id);
   leaf_page->MoveSplitedData(new_leaf_page);
 
+  BPlusTreePage* old_node = leaf_page;
+  BPlusTreePage* new_node = leaf_page;
+  KeyType split = new_node->KeyAt(0);
+  while (true) {
+    // old page is root, create a new parent node
+    if (old_node->IsRootPage()) {
+      Page* new_root_page = buffer_pool_manager_->NewPage(&root_page_id_);
+      auto new_root_node = reinterpret_cast<InternalPage*>(new_root_page->GetData());
+      new_root_node->Init(root_page_id_, INVALID_PAGE_ID, internal_max_size_);
+      new_root_node->SetKV(0, split, old_node->GetPageId());
+      new_root_node->SetKV(1, split, new_node->GetPageId());
+      new_root_node->IncreaseSize(2);
+      old_node->SetParentPageId(root_page_id_);
+      new_node->SetParentPageId(root_page_id_);
+      UpdateRootPageId();
+      buffer_pool_manager_->UnpinPage(root_page_id_, true);
+      break;
+    }
+    // old page is not root, add the splited page to old page's parent as well
+    page_id_t parent_page_id = old_node->GetParentPageId();
+    Page* parent_page = buffer_pool_manager_->FetchPage(parent_page_id);
+    auto parent_node = reinterpret_cast<InternalPage*>(parent_page->GetData());
+    parent_node->Insert(split, new_node->GetPageId(), comparator_);
+    new_node->SetParentPageId(parent_node->GetPageId());
+    if (parent_node->GetSize() <= internal_max_size_) {
+      buffer_pool_manager_->UnpinPage(parent_page_id, true);
+      break;
+    }
+    // parent has m + 1 children after insertion, split needed
+    page_id_t new_sibling_page_id;
+    Page* new_sibling_page = buffer_pool_manager_->NewPage(&new_sibling_page_id);
+    auto new_sibling_node = reinterpret_cast<InternalPage*>(new_parent_page->GetData());
+    new_sibling_node->Init(new_parent_page_id, parent_node->GetParentPageId(), internal_max_size_);
+    // int new_sibling_size = internal_max_size_ / 2; // sibling of the splited parent
+    size_t offset = (parent_node->GetSize() + 1) / 2;
+    for (int i = offset; i < parent_node.GetSize(); ++i) {
+      new_sibling_node->SetKV(i - offset, parent_node->KeyAt(i), parent_node->ValueAt(i));
+      Page* pg = buffer_pool_manager_->FetchPage(parent_node->ValueAt(i));
+      auto node = reinterpret_cast<BPlusTree*>(pg->GetData());
+      node->SetParentPageId(new_sibling_page_id);
+      buffer_pool_manager_->UnpinPage(node->GetPageId(), true);
+    }
+    new_sibling_node->SetSize(internal_max_size_ - offset);
+    parent_node->SetSize(offset);
 
-  return false;
+    buffer_pool_manager_->UnpinPage(old_node->GetPageId(), true);
+    buffer_pool_manager_->UnpinPage(new_node->GetPageId(), true);
+    old_node = parent_node;
+    new_node = new_sibling_page;
+    split = new_sibling_page.KeyAt(0);
+  }
+  buffer_pool_manager_->UnpinPage(old_node->GetPageId(), true);
+  buffer_pool_manager_->UnpinPage(new_node->GetPageId(), true);
+
+  return true;
 }
 
 /*****************************************************************************

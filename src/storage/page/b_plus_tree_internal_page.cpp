@@ -59,7 +59,29 @@ INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const -> ValueType { 
   auto p = static_cast<std::pair<KeyType, ValueType>*>(array_) + index;
   return p->second;
- }
+}
+
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKV(int index, KeyType key, ValueType value) {
+  array_[index].first = key;
+  array_[index].second = value;
+}
+
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Insert(const KeyType& key, const ValueType& value, const KeyComparator& comparator) {
+  int size = GetSize();
+  for (int i = 1; i < size; ++i) {
+    if (comparator(key, KeyAt(i)) > 0) {
+      for (int j = size; j > i + 1; --j) {
+        array_[j] = array_[j - 1];
+      }
+      IncreaseSize(1);
+      SetKV(i + 1, key, value);
+      break;
+    }
+  }
+}
+
 
 // valuetype for internalNode should be page_id_t
 template class BPlusTreeInternalPage<GenericKey<4>, page_id_t, GenericComparator<4>>;
