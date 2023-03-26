@@ -21,7 +21,9 @@ BPLUSTREE_TYPE::BPlusTree(std::string name, BufferPoolManager *buffer_pool_manag
  * Helper function to decide whether current b+tree is empty
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto BPLUSTREE_TYPE::IsEmpty() const -> bool { return true; }
+auto BPLUSTREE_TYPE::IsEmpty() const -> bool { 
+  return root_page_id_ == INVALID_PAGE_ID;
+ }
 /*****************************************************************************
  * SEARCH
  *****************************************************************************/
@@ -30,9 +32,44 @@ auto BPLUSTREE_TYPE::IsEmpty() const -> bool { return true; }
  * This method is used for point query
  * @return : true means key exists
  */
+
+INDEX_TEMPLATE_ARGUMENTS
+auto BPLUSTREE_TYPE::GetLeafPage(const KeyType& key) -> Page* {
+
+  page_id_t next_page_id = root_page_id_;
+  while (true) {
+    Page* page = buffer_pool_manager_->FetchPage(next_page_id);
+    auto tree_node_page = reinterpret_cast<BPlusTree*>(page->GetData());
+    if (tree_node_page->IsLeafPage()) {
+      return page;
+    }
+    auto internal_page = static_cast<InternalPage*>(tree_node_page);
+    next_page_id = internal_page->ValueAt(internal_page->GetSize() - 1);
+    for (int i = 1; i < internal_page->GetSize(); ++i) {
+      if (comparator_(internal_page->KeyAt(i), key) > 0) {
+        next_page_id = internal_page->VauleAt(i - 1);
+        break;
+      }
+    }
+    buffer_pool_manager_->UnpinPage(internal_page->GetPageId(), false);
+  }
+}
+
 INDEX_TEMPLATE_ARGUMENTS
 auto BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction) -> bool {
-  return false;
+
+  Page* target_page = GetLeafPage(key);
+  auto target_leaf_page = reinterpret_cast<LeafPage*>(page);
+  bool exist = false;
+  for (int i = 0; i < target_leaf_page->GetSize(); ++i) {
+    if (comparator_(key, target_leaf_page->KeyAt(i)) == 0) {
+      result->emplace_back(target_leaf_page->ValueAt(i));
+      exist = true;
+    }
+  }
+  buffer_pool_manager_->UnpinPage(target_page->GetPageId(), false);
+
+  return exist;
 }
 
 /*****************************************************************************
@@ -47,6 +84,44 @@ auto BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
  */
 INDEX_TEMPLATE_ARGUMENTS
 auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transaction *transaction) -> bool {
+  LeafPage* leaf_page = nullptr;
+  if (IsEmpty()) { // 1. tree is empty, insert a node treated as leaf node
+    Page* page = buffer_pool_manager_->NewPage(&root_page_id_);
+    UpdateRootPageId(1);
+    leaf_page = reinterpret_cast<LeafPage*>(page->GetData());
+    leaf_page->Init(root_page_id_, INVALID_PAGE_ID, leaf_max_size_);
+    leaf_page->SetKV(0, key, value);
+    leaf_page->IncreaseSize();
+    leaf_page->SetNextPageId(INVALID_PAGE_ID);
+    buffer_pool_manager_->UnpinPage(root_page_id_, false); // false means not dirty
+    return true;
+  }
+  Page* page = GetLeafPage(key);
+  leaf_page = reinterpret_cast<LeafPage*>(page->GetData());
+  for (int i = 0; i < leaf_page->GetSize(); ++i) {
+    // 2. a node with the intended key to insert already exists,
+    //    return false
+    if (comparator_(leaf_page->KeyAt(i), key) == 0) { 
+      buffer_pool_manager_->UnpinPage(leaf_page->GetPageId(), false);
+      return false;
+    }
+  }
+  leaf_page->Insert(key, value, comparator_);
+  if (leaf_page->GetSize < leaf_max_size_) {
+    buffer_pool_manager_->UnpinPage(leaf_page->GetPageId(), false);
+    return true;
+  }
+
+  // 3. leaf node reaches max capacity, split it
+  page_id_t new_leaf_id;
+  Page* new_page = buffer_pool_manager_->NewPage(&new_leaf_id);
+  auto new_leaf_page = reinterpret_cast<LeafPage*>(new_page->GetData());
+  new_leaf_page->Init(new_leaf_id, leaf_page->GetParentPageId(), leaf_max_size_);
+  new_leaf_page->SetNextPageId(leaf_page->GetNextPageId());
+  leaf_page->SetNextPageId(new_leaf_id);
+  leaf_page->MoveSplitedData(new_leaf_page);
+
+
   return false;
 }
 

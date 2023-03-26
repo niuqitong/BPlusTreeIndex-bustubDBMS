@@ -58,6 +58,38 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::KeyAt(int index) const -> KeyType {
   return *(p + index).first;
 }
 
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_LEAF_PAGE_TYPE::SetKV(int index, KeyType key, ValueType value) {
+  array_[index].first = key;
+  array_[index].second = value;
+}
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType& key, const ValueType& value, const KeyComparator& comparator) {
+  int size = GetSize();
+  for (int i = 0; i < size; ++i) {
+    if (comparator(key, KeyAt(i)) > 0) {
+      for (int j = size; j > i + 1; --j) {
+        array_[j] = array_[j - 1];
+      }
+      IncreaseSize(1);
+      SetKV(i + 1, key, value);
+      break;
+    }
+  }
+}
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveSplitedData(B_PLUS_TREE_LEAF_PAGE_TYPE* target_leaf) {
+  int old_size = GetSize();
+  int offset = (old_size + 1) / 2;
+  for (int i = offset; i < old_size; ++i) {
+    target_leaf->SetKV(i - offset, array_[i].first, array_[i].second);
+  }
+  SetSize(offset);
+  target_leaf->SetSize(old_size - offset);
+}
+
+
+
 template class BPlusTreeLeafPage<GenericKey<4>, RID, GenericComparator<4>>;
 template class BPlusTreeLeafPage<GenericKey<8>, RID, GenericComparator<8>>;
 template class BPlusTreeLeafPage<GenericKey<16>, RID, GenericComparator<16>>;
