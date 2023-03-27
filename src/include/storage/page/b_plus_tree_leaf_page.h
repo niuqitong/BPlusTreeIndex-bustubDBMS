@@ -52,6 +52,7 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   void SetKV(int index, KeyType key, ValueType value);
   void Insert(const KeyType& key, const ValueType& value, const KeyComparator& comparator);
   void MoveSplitedData(B_PLUS_TREE_LEAF_PAGE_TYPE* target_leaf);
+  auto Lowerbound(const KeyType& key, const KeyComparator& comparator) const -> int;
  private:
   page_id_t next_page_id_;
   // Flexible array member for page data.

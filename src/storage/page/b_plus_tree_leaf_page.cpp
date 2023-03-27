@@ -88,6 +88,15 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveSplitedData(B_PLUS_TREE_LEAF_PAGE_TYPE* tar
   target_leaf->SetSize(old_size - offset);
 }
 
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::Lowerbound(const KeyType& key, const KeyComparator& comparator) const -> int {
+  int index = 0;
+  int size = GetSize();
+  while (index < size && comparator(array_[index].first, key) < 0) {
+    ++index;
+  }
+  return index;
+}
 
 
 template class BPlusTreeLeafPage<GenericKey<4>, RID, GenericComparator<4>>;

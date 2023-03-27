@@ -200,7 +200,24 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {}
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE(); }
+auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE { 
+  page_id_t next_page_id = root_page_id_;
+  while (true) {
+    Page* pg = buffer_pool_manager_->FetchPage(next_page_id);
+    auto tree_page = reinterpret_cast<BPlusTree*>(page->GetData());
+    if (tree_page->IsLeafPage()) {
+      return INDEXITERATOR_TYPE(tree_page->GetPageId(), 0, buffer_pool_manager_);
+    }
+    auto internal_page = static_cast<InternalPage*>(tree_page);
+    if (internal_page == nullptr) {
+      throw std::bad_cast();
+    }
+    next_page_id = internal_page->ValueAt(0);
+    buffer_pool_manager_->UnpinPage(internal_page->GetPageId(), false);
+  }
+  
+  return INDEXITERATOR_TYPE(); 
+  }
 
 /*
  * Input parameter is low key, find the leaf page that contains the input key
@@ -208,7 +225,12 @@ auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE()
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE(); }
+auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE { 
+  
+  Page* page = GetLeafPage(key);
+  auto leaf_page = reinterpret_cast<LeafPage*>(page->GetData());
+  return INDEXITERATOR_TYPE(page->GetPageId(), leaf_page->Lowerbound(key, comparator_), buffer_pool_manager_);
+}
 
 /*
  * Input parameter is void, construct an index iterator representing the end
@@ -216,7 +238,9 @@ auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE { return IN
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto BPLUSTREE_TYPE::End() -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE(); }
+auto BPLUSTREE_TYPE::End() -> INDEXITERATOR_TYPE { 
+  return INDEXITERATOR_TYPE(INVALID_PAGE_ID, 0, nullptr); 
+}
 
 /**
  * @return Page id of the root of this tree
