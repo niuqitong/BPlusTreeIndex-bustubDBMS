@@ -51,6 +51,7 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   auto KeyAt(int index) const -> KeyType;
   void SetKV(int index, KeyType key, ValueType value);
   void Insert(const KeyType& key, const ValueType& value, const KeyComparator& comparator);
+  void Remove(const KeyType& key, const KeyComparator& comparator);
   void MoveSplitedData(B_PLUS_TREE_LEAF_PAGE_TYPE* target_leaf);
   auto Lowerbound(const KeyType& key, const KeyComparator& comparator) const -> int;
  private:

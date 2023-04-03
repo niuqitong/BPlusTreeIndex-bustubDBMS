@@ -189,7 +189,52 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
  * necessary.
  */
 INDEX_TEMPLATE_ARGUMENTS
-void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {}
+void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
+
+  if (IsEmpty()) {
+    return;
+  }
+  Page* page = GetLeafPage(key);
+  auto leaf_page = reinterpret_cast<LeafPage*>(page->GetData());
+  leaf_page->Remove(key, comparator_);
+
+  if (leaf_page->IsRootPage()){
+    return;
+  }
+
+  if (leaf_page->GetSieze() < leaf_page->GetMinSize()) {
+    HandleUnderflow(leaf_page, transaction);
+  }
+
+}
+
+INDEX_TEMPLATE_ARGUMENTS
+void BPLUSTREE_TYPE::HandleUnderflow(BPlusTreePage* page, Transaction *transaction) {
+  if (page->IsRootPage()) {
+    if (page->IsLeafPage() || page->GetSize() > 1) {
+      return;
+    }
+    auto old_root_page = static_cast<InternalPage*>(page);
+    root_page_id_ = old_root_page->ValueAt(0);
+    auto new_root_page = reinterpret_cast<InternalPage*>(buffer_pool_manager_->FetchPage(root_page_id_)->GetData());
+    new_root_page->SetParentPageId(INVALID_PAGE_ID);
+    buffer_pool_manager_->UnpinPage(root_page_id_, true);
+    UpdateRootPageId();
+    return;
+  }
+
+
+
+}
+
+INDEX_TEMPLATE_ARGUMENTS
+void BPLUSTREE_TYPE::GetSiblings(BPlusTreePage* page, page_id_t& left, page_id_t& right) {
+  if (page->IsRootPage) {
+    throw std::invalid_argument("tring to get siblings of the root node");
+  }
+  auto parent_page = reinterpret_cast<InternalPage*>(buffer_pool_manager_->FetchPage(page->GetParentPageId())->GetData());
+  auto idx = parent_page->FindValue()
+}
 
 /*****************************************************************************
  * INDEX ITERATOR
@@ -215,9 +260,8 @@ auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE {
     next_page_id = internal_page->ValueAt(0);
     buffer_pool_manager_->UnpinPage(internal_page->GetPageId(), false);
   }
-  
-  return INDEXITERATOR_TYPE(); 
-  }
+  return INDEXITERATOR_TYPE(INVALID_PAGE_ID, 0, nullptr); 
+}
 
 /*
  * Input parameter is low key, find the leaf page that contains the input key

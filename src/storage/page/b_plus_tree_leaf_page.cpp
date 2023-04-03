@@ -77,6 +77,21 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType& key, const ValueType& val
     }
   }
 }
+
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_LEAF_PAGE_TYPE::Remove(const KeyType& key, const KeyComparator& comparator) {
+  int size = GetSize();
+  for (int i = 0; i < size; ++i) {
+    if (comparator(key, KeyAt(i)) == 0) {
+      for (int j = i; j < size - 1; ++j) {
+        array_[j] = array_[j + 1];
+      }
+      SetSize(size - 1);
+      break;
+    }
+  }
+}
+
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveSplitedData(B_PLUS_TREE_LEAF_PAGE_TYPE* target_leaf) {
   int old_size = GetSize();
