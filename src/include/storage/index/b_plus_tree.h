@@ -52,6 +52,9 @@ class BPlusTree {
   void Remove(const KeyType &key, Transaction *transaction = nullptr);
   void HandleUnderflow(BPlusTreePage* page, Transaction *transaction = nullptr);
   void GetSiblings(BPlusTreePage* page, page_id_t& left, page_id_t& right);
+  auto TryBorrow(BPlusTreePage* page, BPlusTreePage* sibling_page, InternalPage* parent_page, bool is_left_sibling) -> bool;
+  void MergePage(BPlusTreePage* left_page, BPlusTreePage* right_page, BPlusTreePage* parent_page);
+  void SetPageParentId(page_id_t child, page_id_t parent);
 
   // return the value associated with a given key
   auto GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction = nullptr) -> bool;

@@ -43,8 +43,9 @@ class BPlusTreeInternalPage : public BPlusTreePage {
   auto ValueAt(int index) const -> ValueType;
   void Insert(const KeyType& key, const ValueType& value, const KeyComparator& comparator);
   void SetKV(int index, KeyType key, ValueType value);
-
-
+  auto ArrayIndex(const page_id_t& child_id) const -> int;
+  void SetValueAt(int index, ValueType v);
+  void RemoveAt(int index);
  private:
   // Flexible array member for page data.
   MappingType array_[1]; // std::pair<KeyType, ValueType>

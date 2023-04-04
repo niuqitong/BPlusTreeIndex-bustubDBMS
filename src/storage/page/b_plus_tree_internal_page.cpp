@@ -62,6 +62,23 @@ auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const -> ValueType {
 }
 
 INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetValueAt(int index, ValueType v) {
+  auto p = static_cast<std::pair<KeyType, ValueType>*>(array_) + index;
+  p->second = v;
+}
+
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::RemoveAt(int index) {
+
+  int size = GetSize();
+  for (int i = index + 1; i < size; ++i) {
+    array_[i - 1] = array_[i];
+  }
+  SetSize(size - 1);
+}
+
+
+INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKV(int index, KeyType key, ValueType value) {
   array_[index].first = key;
   array_[index].second = value;
@@ -81,6 +98,18 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Insert(const KeyType& key, const ValueType&
     }
   }
 }
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::ArrayIndex(const page_id_t& child_id) const -> int {
+  int size = GetSize();
+  // using InternalPage = BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>;
+  for (int i = 0; i < size; ++i) {
+    if (ValueAt(i) == child_id) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 
 
 // valuetype for internalNode should be page_id_t
