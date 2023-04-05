@@ -119,7 +119,7 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   new_leaf_page->Init(new_leaf_id, leaf_page->GetParentPageId(), leaf_max_size_);
   new_leaf_page->SetNextPageId(leaf_page->GetNextPageId());
   leaf_page->SetNextPageId(new_leaf_id);
-  leaf_page->MoveSplitedData(new_leaf_page);
+  leaf_page->MoveSplitedData(new_leaf_page); // move half of leaf_page's data to new_leaf_page
 
   BPlusTreePage* old_node = leaf_page;
   BPlusTreePage* new_node = leaf_page;
@@ -139,6 +139,7 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
       buffer_pool_manager_->UnpinPage(root_page_id_, true);
       break;
     }
+    
     // old page is not root, add the splited page to old page's parent as well
     page_id_t parent_page_id = old_node->GetParentPageId();
     Page* parent_page = buffer_pool_manager_->FetchPage(parent_page_id);
@@ -159,7 +160,7 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
     for (int i = offset; i < parent_node.GetSize(); ++i) {
       new_sibling_node->SetKV(i - offset, parent_node->KeyAt(i), parent_node->ValueAt(i));
       Page* pg = buffer_pool_manager_->FetchPage(parent_node->ValueAt(i));
-      auto node = reinterpret_cast<BPlusTree*>(pg->GetData());
+      auto node = reinterpret_cast<BPlusTreePage*>(pg->GetData());
       node->SetParentPageId(new_sibling_page_id);
       buffer_pool_manager_->UnpinPage(node->GetPageId(), true);
     }
@@ -249,6 +250,7 @@ void BPLUSTREE_TYPE::HandleUnderflow(BPlusTreePage* page, Transaction *transacti
     buffer_pool_manager_->UnpinPage(parent_page->GetPageId(), true);
     return;
   }
+  
   if (left_page != nullptr) {
     MergePage(left_page, page, parent_page);
   } else {
@@ -286,13 +288,19 @@ auto BPLUSTREE_TYPE::TryBorrow(BPlusTreePage* page, BPlusTreePage* sibling_page,
     auto internal_page = static_cast<InternalPage*>(page);
     auto internal_sibling_page = static_cast<InternalPage*>(sibling_page);
     updated = internal_sibling_page->KeyAt(sibling_array_id);
+    /*
+      borrow from left sibling:
+        updated key = last key of array_ of left sibling
+      borrow from right sibling:
+        updated key =  first key of array_ of right sibling
+    */
     page_id_t child_id;
     if (is_left_sibling) {
       internal_page->Insert(parent_page->KeyAt(parent_array_id), internal_page->ValueAt(0), comparator_);
       internal_page->SetValueAt(0, internal_sibling_page->ValueAt(sibling_array_id));
       child_id = internal_page->ValueAt(0);
     } else {
-      internal_page->SetKV(internla_page->GetSize(), parent_page->KeyAt(parent_array_id), internal_sibling_page->ValueAt(0));
+      internal_page->SetKV(internal_page->GetSize(), parent_page->KeyAt(parent_array_id), internal_sibling_page->ValueAt(0));
       internal_page->IncreaseSize(1);
       internal_sibling_page->SetKV(0, internal_sibling_page->KeyAt(0), internal_sibling_page->ValueAt(1));
       child_id = internal_page->ValueAt(internal_page->GetSize() - 1);
@@ -332,7 +340,10 @@ void BPLUSTREE_TYPE::MergePage(BPlusTreePage* left_page, BPlusTreePage* right_pa
 
 INDEX_TEMPLATE_ARGUMENTS
 void BPLUSTREE_TYPE::SetPageParentId(page_id_t child, page_id_t parent) {
-
+  auto page = buffer_pool_manager_->FetchPage(child);
+  auto child_node_page = reinterpret_cast<BPlusTreePage*>(page);
+  child_node_page->SetParentPageId(parent);
+  buffer_pool_manager_->UnpinPage(child, false);
 }
 
 INDEX_TEMPLATE_ARGUMENTS
