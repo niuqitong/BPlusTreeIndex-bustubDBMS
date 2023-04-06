@@ -23,6 +23,10 @@ namespace bustub {
 
 #define BPLUSTREE_TYPE BPlusTree<KeyType, ValueType, KeyComparator>
 
+enum class Operation{
+  Read, Insert, Remove
+};
+
 /**
  * Main class providing the API for the Interactive B+ Tree.
  *
@@ -50,10 +54,7 @@ class BPlusTree {
 
   // Remove a key and its value from this B+ tree.
   void Remove(const KeyType &key, Transaction *transaction = nullptr);
-  void HandleUnderflow(BPlusTreePage* page, Transaction *transaction = nullptr);
-  void GetSiblings(BPlusTreePage* page, page_id_t& left, page_id_t& right);
-  auto TryBorrow(BPlusTreePage* page, BPlusTreePage* sibling_page, InternalPage* parent_page, bool is_left_sibling) -> bool;
-  void MergePage(BPlusTreePage* left_page, BPlusTreePage* right_page, BPlusTreePage* parent_page);
+  
   void SetPageParentId(page_id_t child, page_id_t parent);
 
   // return the value associated with a given key
@@ -82,7 +83,20 @@ class BPlusTree {
  private:
   void UpdateRootPageId(int insert_record = 0);
 
-  auto GetLeafPage(const KeyType& key) -> Page*;
+  // used for remove
+  void HandleUnderflow(BPlusTreePage* page, Transaction *transaction = nullptr);
+  void GetSiblings(BPlusTreePage* page, page_id_t& left, page_id_t& right, Transaction* trx);
+  auto TryBorrow(BPlusTreePage* page, BPlusTreePage* sibling_page, InternalPage* parent_page, bool is_left_sibling) -> bool;
+  void MergePage(BPlusTreePage* left_page, BPlusTreePage* right_page, BPlusTreePage* parent_page, Transaction* trx);
+
+  // Concurrency control
+  auto IsPageSafe(BPlusTreePage* tree_page, Operation op) -> bool;
+  void ReleaseWLatches(Transaction* trx);
+  auto GetPageFromTrx(page_id_t page_id, Transaction* trx) -> Page*;
+
+  // auto GetLeafPage(const KeyType& key) -> Page*;
+  auto GetLeafPage(const KeyType& key, Transaction* trx, Operation op, bool is_first_pass = true) -> Page*;
+
 
   /* Debug Routines for FREE!! */
   void ToGraph(BPlusTreePage *page, BufferPoolManager *bpm, std::ofstream &out) const;
@@ -96,6 +110,7 @@ class BPlusTree {
   KeyComparator comparator_;
   int leaf_max_size_;
   int internal_max_size_;
+  ReaderWriterLatch root_latch_;
 };
 
 }  // namespace bustub
